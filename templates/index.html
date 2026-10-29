@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Currency Converter | Python Flask Project</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="page-shell">
+        <header class="hero">
+            <div class="brand-mark" aria-hidden="true">↔</div>
+            <p class="eyebrow">PYTHON MINOR PROJECT</p>
+            <h1>Currency Converter</h1>
+            <p class="subtitle">Convert currencies using exchange-rate data from an API.</p>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <section class="messages" aria-live="polite">
+                    {% for category, message in messages %}
+                        <div class="alert {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </section>
+            {% endif %}
+        {% endwith %}
+
+        <section class="panel converter-panel">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">CONVERSION</p>
+                    <h2>Calculate exchange</h2>
+                </div>
+                <span class="api-pill"><span class="status-dot"></span> API-powered</span>
+            </div>
+
+            <form method="POST" action="{{ url_for('index') }}" id="converter-form">
+                <label for="amount">Amount</label>
+                <input
+                    type="number" id="amount" name="amount"
+                    min="0.000001" step="any" required
+                    value="{{ form.amount }}" placeholder="Enter amount">
+
+                <div class="currency-grid">
+                    <div class="field">
+                        <label for="from_currency">From currency</label>
+                        <select id="from_currency" name="from_currency" required>
+                            {% for code, name in currencies.items() %}
+                                <option value="{{ code }}" {% if form.from_currency == code %}selected{% endif %}>
+                                    {{ code }} — {{ name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button class="swap-button" type="button" id="swap-button"
+                            aria-label="Swap currencies" title="Swap currencies">⇄</button>
+
+                    <div class="field">
+                        <label for="to_currency">To currency</label>
+                        <select id="to_currency" name="to_currency" required>
+                            {% for code, name in currencies.items() %}
+                                <option value="{{ code }}" {% if form.to_currency == code %}selected{% endif %}>
+                                    {{ code }} — {{ name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <button class="primary-button" type="submit">Convert currency <span>→</span></button>
+            </form>
+
+            {% if result %}
+                <section class="result-card" aria-live="polite">
+                    <p class="result-label">CONVERTED AMOUNT</p>
+                    <p class="result-amount">{{ result.converted }} <span>{{ result.to_currency }}</span></p>
+                    <p class="result-equation">
+                        {{ result.amount }} {{ result.from_currency }}
+                        = {{ result.converted }} {{ result.to_currency }}
+                    </p>
+                    <div class="result-details">
+                        <div>
+                            <span>Exchange rate</span>
+                            <strong>1 {{ result.from_currency }} = {{ result.rate }} {{ result.to_currency }}</strong>
+                        </div>
+                        <div>
+                            <span>Rate date</span>
+                            <strong>{{ result.rate_date }}</strong>
+                        </div>
+                    </div>
+                </section>
+            {% endif %}
+            <p class="disclaimer">Rates are reference rates, not guaranteed bank, cash-exchange, or real-time trading quotes.</p>
+        </section>
+
+        <section class="panel history-panel">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">YOUR RECENT ACTIVITY</p>
+                    <h2>Conversion history</h2>
+                </div>
+                {% if history %}
+                    <form method="POST" action="{{ url_for('clear_history') }}"
+                          onsubmit="return confirm('Clear all saved conversion history?');">
+                        <button class="text-button" type="submit">Clear history</button>
+                    </form>
+                {% endif %}
+            </div>
+
+            {% if history %}
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date &amp; time</th>
+                                <th>Conversion</th>
+                                <th>Rate</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in history %}
+                                <tr>
+                                    <td class="date-cell">{{ item["created_at"] }}<small>Rate date: {{ item["rate_date"] }}</small></td>
+                                    <td>{{ "%.2f"|format(item["amount"]|float) }} {{ item["from_currency"] }} <span class="muted-arrow">→</span> {{ item["to_currency"] }}</td>
+                                    <td>{{ "%.6f"|format(item["exchange_rate"]|float) }}</td>
+                                    <td class="result-cell">{{ "%.2f"|format(item["converted_amount"]|float) }} {{ item["to_currency"] }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">◷</div>
+                    <p>No conversions saved yet.</p>
+                    <span>Your successful conversions will appear here.</span>
+                </div>
+            {% endif %}
+        </section>
+
+        <footer>
+            <p>Built with Python, Flask, SQLite and the Frankfurter API.</p>
+            <p>Educational project · Exchange rates may update on business days.</p>
+        </footer>
+    </main>
+
+    <script>
+        // Swap the currently selected currencies without submitting the form.
+        const fromSelect = document.getElementById("from_currency");
+        const toSelect = document.getElementById("to_currency");
+        document.getElementById("swap-button").addEventListener("click", () => {
+            const oldFrom = fromSelect.value;
+            fromSelect.value = toSelect.value;
+            toSelect.value = oldFrom;
+        });
+    </script>
+</body>
+</html>
